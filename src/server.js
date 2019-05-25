@@ -1,8 +1,10 @@
 const api = require('./apis');
+const cookieParser = require('cookie-parser');
 const express = require('express');
 const sql = require('mssql');
 const swagger = require('swagger-spec-express');
 const swaggerUi = require('swagger-ui-express');
+const { authMiddleware } = require('./helpers');
 
 const connectToDatabase = async () => {
   const config = {
@@ -40,6 +42,9 @@ const connectToDatabase = async () => {
     res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept, Authorization, authentication');
     next();
   });
+
+  app.use(cookieParser());
+  app.use(authMiddleware);
 
   app.use('/api', api);
 

@@ -1,10 +1,16 @@
 const router = require('express').Router();
 const swagger = require('swagger-spec-express');
 const sql = require('mssql');
+const uniqid = require('uniqid');
 
 swagger.swaggerise(router);
 
 router.post('/sign-in', async (req, res) => {
+  const {
+    email,
+    password
+  } = req.body;
+
   let foundUser;
   const request = new sql.Request();
   const users = await request.query('SELECT * FROM Users');
@@ -22,6 +28,33 @@ router.post('/sign-in', async (req, res) => {
     res.send('true');
   }
 
+  const sid = uniqid();
+
+  const searchQuery = `
+    SELECT *
+    FROM Users
+    WHERE email = ${email} password = ${password}
+  `;
+
+  const sessionQuery = `
+    INSERT INTO [dbo].[Session]
+          ([sid]
+          ,[email])
+    VALUES
+          (${sid}
+          ,${email})
+  `;
+
+  const user = await new sql.Request().query(searchQuery);
+
+  if (!user) {  // TODO validation if not found
+    res.status(401).send();
+  }
+
+  await new sql.Request().query(sessionQuery);
+
+  res.cookie('sid', sid, { httpOnly: false });
+  res.status(204).send();
 }).describe({
   responses: {
     200: {
